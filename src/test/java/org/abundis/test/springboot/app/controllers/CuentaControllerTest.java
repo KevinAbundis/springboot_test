@@ -3,8 +3,10 @@ package org.abundis.test.springboot.app.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.abundis.test.springboot.app.models.Cuenta;
 import org.abundis.test.springboot.app.models.TransaccionDto;
 import org.abundis.test.springboot.app.services.CuentaService;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.mockito.Mockito.*;
 import static org.abundis.test.springboot.app.Datos.*;
@@ -58,7 +59,7 @@ class CuentaControllerTest {
     }
 
     @Test
-    void testTransferir() throws Exception, JsonProcessingException {
+    void testTransferir() throws Exception {
         //Given
         TransaccionDto dto = new TransaccionDto();
         dto.setCuentaOrigenId(1L);
@@ -88,5 +89,45 @@ class CuentaControllerTest {
                 .andExpect(jsonPath("$.mensaje").value("Transferencia realizada con éxito!"))
                 .andExpect(jsonPath("$.transaccion.cuentaOrigenId").value(dto.getCuentaOrigenId()))
                 .andExpect(content().json(objectMapper.writeValueAsString(response)));
+    }
+
+    @Test
+    void testListar() throws Exception {
+        //Given
+        List<Cuenta> cuentas = Arrays.asList(crearCuenta001().orElseThrow(),crearCuenta002().orElseThrow());
+        when(cuentaService.findAll()).thenReturn(cuentas);
+
+        //When
+        mvc.perform(get("/api/cuentas").contentType(MediaType.APPLICATION_JSON))
+                //Then
+                .andExpect(jsonPath("$[0].persona").value("Andrés"))
+                .andExpect(jsonPath("$[1].persona").value("Jhon"))
+                .andExpect(jsonPath("$[0].saldo").value("1000"))
+                .andExpect(jsonPath("$[1].saldo").value("2000"))
+                .andExpect(jsonPath("$", Matchers.hasSize(2)))
+                .andExpect(content().json(objectMapper.writeValueAsString(cuentas)));
+        verify(cuentaService).findAll();
+    }
+
+    @Test
+    void testGuardar() throws Exception {
+        //Given
+        Cuenta cuenta = new Cuenta(null, "Pepe", new BigDecimal("3000"));
+        when(cuentaService.safe(any())).then(invocation -> {
+            Cuenta c = invocation.getArgument(0);
+            c.setId(3L);
+            return c;
+        });
+
+        //When
+        mvc.perform(post("/api/cuentas").contentType(MediaType.APPLICATION_JSON)
+                //Then
+                .content(objectMapper.writeValueAsString(cuenta)))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id", Matchers.is(3)))
+                .andExpect(jsonPath("$.persona", Matchers.is("Pepe")))
+                .andExpect(jsonPath("$.saldo", Matchers.is(3000)));
+        verify(cuentaService).safe(any());
     }
 }

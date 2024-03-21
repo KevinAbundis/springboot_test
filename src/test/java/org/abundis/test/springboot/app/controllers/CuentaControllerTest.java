@@ -1,7 +1,6 @@
 package org.abundis.test.springboot.app.controllers;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.abundis.test.springboot.app.models.Cuenta;
 import org.abundis.test.springboot.app.models.TransaccionDto;
@@ -113,7 +112,7 @@ class CuentaControllerTest {
     void testGuardar() throws Exception {
         //Given
         Cuenta cuenta = new Cuenta(null, "Pepe", new BigDecimal("3000"));
-        when(cuentaService.safe(any())).then(invocation -> {
+        when(cuentaService.save(any())).then(invocation -> {
             Cuenta c = invocation.getArgument(0);
             c.setId(3L);
             return c;
@@ -128,6 +127,6 @@ class CuentaControllerTest {
                 .andExpect(jsonPath("$.id", Matchers.is(3)))
                 .andExpect(jsonPath("$.persona", Matchers.is("Pepe")))
                 .andExpect(jsonPath("$.saldo", Matchers.is(3000)));
-        verify(cuentaService).safe(any());
+        verify(cuentaService).save(any());
     }
 }

@@ -10,7 +10,7 @@ public interface CuentaService {
 
     Cuenta findById(Long id);
 
-    Cuenta safe (Cuenta cuenta);
+    Cuenta save (Cuenta cuenta);
 
     int revisarTotalTransferencias(Long bancoId);
 
